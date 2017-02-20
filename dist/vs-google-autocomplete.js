@@ -1,7 +1,7 @@
 /**
- * vsGoogleAutocomplete - v0.5.0 - 2015-11-29
+ * vsGoogleAutocomplete - v0.5.0 - 2017-02-20
  * https://github.com/vskosp/vsGoogleAutocomplete
- * Copyright (c) 2015 K.Polishchuk
+ * Copyright (c) 2017 K.Polishchuk
  * License: MIT
  */
 (function (window, document) {
@@ -181,6 +181,12 @@ angular.module('vsGoogleAutocomplete').directive('vsGoogleAutocomplete', ['vsGoo
 			var autocompleteOptions = scope.vsGoogleAutocomplete || {},
 				autocomplete = new google.maps.places.Autocomplete(element[0], autocompleteOptions);
 
+            // google.maps.places.SearchBox instance
+            var searchbox = new google.maps.places.SearchBox(element[0]);
+
+            // google.maps.places.PlacesService instance
+            var service = new google.maps.places.PlacesService(element[0]);
+
 			// google place object
 			var place;
 
@@ -210,12 +216,19 @@ angular.module('vsGoogleAutocomplete').directive('vsGoogleAutocomplete', ['vsGoo
 				});
 			});
 
-			// prevent submitting form on enter
-			google.maps.event.addDomListener(element[0], 'keydown', function(e) {
-				if (e.keyCode == 13) {
-					e.preventDefault();
-				}
-			});
+			// do a full text search on places_changed
+            searchbox.addListener('places_changed', function () {
+                   service.getDetails({ placeId: searchbox.getPlaces()[0].place_id }, function (place) {
+                        viewValue = place.formatted_address || modelCtrl.$viewValue;
+                        scope.$apply(function() {
+                            scope.vsPlace = place;
+                            autocompleteCtrl.updatePlaceComponents(place);
+                            modelCtrl.$setViewValue(viewValue);
+                            modelCtrl.$render();                        
+                        });
+                   });
+            });
+    
 		}
 	};
 }]);
